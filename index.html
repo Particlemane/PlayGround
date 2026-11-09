@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#182b36">
-<title>Little Elsewhere — A tiny wandering adventure</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%234e7460'/%3E%3Crect x='4' y='5' width='8' height='8' fill='%23e88955'/%3E%3Crect x='4' y='2' width='3' height='5' fill='%23e88955'/%3E%3Crect x='9' y='2' width='3' height='5' fill='%23e88955'/%3E%3C/svg%3E">
+<title>Wanderlust — A tiny climbing adventure</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%234e7460'/%3E%3Crect x='4' y='5' width='8' height='8' fill='%23e88955'/%3E%3Crect x='4' y='2' width='3' height='5' fill='%23e88955'/%3E%3Crect x='9' y='2' width='3' height='5' fill='%23e88955'/%3E%3C/svg%3E">
 <style>
 :root{color-scheme:dark;font-family:ui-rounded,system-ui,-apple-system,Segoe UI,sans-serif;background:#182b36;color:#fff}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#182b36;touch-action:none}body{display:grid;place-items:center}.shell{width:min(100vw,177.78vh);height:min(100vh,56.25vw);position:relative;background:#182b36;overflow:hidden;box-shadow:0 12px 70px #08151c}.game{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}#hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:#e4e6cc;font-size:clamp(9px,1.3vw,13px);text-shadow:0 2px #17252d;pointer-events:none;opacity:.85;white-space:nowrap}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
 </style>
 </head>
-<body><main class="shell"><canvas class="game" id="game" width="480" height="270" aria-label="Little Elsewhere pixel platform game"></canvas><div id="hint">Move: ← → / A D · Jump: Space / ↑ · Explore: E · Touch controls below</div></main>
+<body><main class="shell"><canvas class="game" id="game" width="480" height="270" aria-label="Wanderlust pixel platform game"></canvas><div id="hint">Move: ← → / A D · Jump: Space / ↑ · Explore: E · Touch controls below</div></main>
 <script>
 (()=>{
 'use strict';
@@ -15,7 +15,7 @@ const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');ctx.ima
 const W=480,H=270, keys=new Set(), pointer={x:0,y:0,down:false};
 const palette={ink:'#263541',cream:'#fff0c7',muted:'#b9bca5',gold:'#ffd36c',pink:'#f28b78',green:'#73bf84',blue:'#85c9d4'};
 const animals=[
- {name:'Pip',kind:'FOX',color:'#e88955',accent:'#fff0c7',trait:'Quick feet · nimble jumps',plus:'Fast runner',minus:'Gets homesick quicker',speed:1.13,jump:1.08,sensitivity:1.13},
+ {name:'Pip',kind:'FOX',color:'#e88955',accent:'#fff0c7',trait:'Quick feet · nimble jumps',plus:'Fast runner',minus:'Hardships weigh more',speed:1.13,jump:1.08,sensitivity:1.13},
  {name:'Moss',kind:'BEAR',color:'#9a7556',accent:'#e1bc86',trait:'Steady heart · sturdy pack',plus:'Shrugs off hardships',minus:'A little slower',speed:.88,jump:.96,sensitivity:.78},
  {name:'Juniper',kind:'RABBIT',color:'#c7a6a0',accent:'#f8dfd3',trait:'Big leaps · loves the view',plus:'Excellent jumper',minus:'Puddles are a bother',speed:1,jump:1.32,sensitivity:.92}
 ];
@@ -25,8 +25,10 @@ const biomes=[
  {name:'SUN-DAPPLE WOODS',sub:'Every path has a story',sky:'#c7dba4',far:'#8eae72',mid:'#608453',ground:'#394e3d',accent:'#e5d28d',ground2:'#536d48',sun:'#ffe59c'},
  {name:'EMBER RIDGE',sub:'A little farther, a little higher',sky:'#eead8d',far:'#c98472',mid:'#975e58',ground:'#563c43',accent:'#f2c276',ground2:'#79504a',sun:'#fff0ad'}
 ];
-let mode='title',animalIndex=0,animal=animals[0],stage=0,coins=0,stress=0,camera=0,player,platforms=[],hazards=[],sights=[],areaSeen=new Set(),shopItems={boots:false,umbrella:false,pack:false},status={wet:0,torn:0},toast='',toastTime=0,tick=0,worldEnd=1850,previousArea=-1,runWon=false;
-const rand=(n)=>{let x=Math.sin(n*127.1+stage*311.7)*43758.5453;return x-Math.floor(x)};
+let mode='title',animalIndex=0,animal=animals[0],stage=0,coins=0,homesickness=0,wanderlust=100,camera=0,cameraY=0,player,platforms=[],hazards=[],sights=[],areaSeen=new Set(),shopItems={boots:false,umbrella:false,pack:false},status={wet:0,torn:0},toast='',toastTime=0,tick=0,worldEnd=1850,previousArea=-1,runWon=false,runSeed=1;
+const rand=(n)=>{let x=Math.sin((n+1)*127.1+runSeed*311.7+stage*71.3)*43758.5453;return x-Math.floor(x)};
+function hardship(amount){homesickness=Math.min(100,homesickness+amount*animal.sensitivity);wanderlust=Math.max(0,wanderlust-amount*animal.sensitivity)}
+function wonder(amount){homesickness=Math.max(0,homesickness-amount*.55);wanderlust=Math.min(100,wanderlust+amount)}
 function rounded(x,y,w,h,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()}
 function text(s,x,y,size=10,color=palette.cream,align='left',font='bold'){ctx.fillStyle=color;ctx.font=`${font} ${size}px ui-rounded,system-ui,sans-serif`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillText(s,x,y)}
 function panel(x,y,w,h){rounded(x+2,y+3,w,h,7,'#23343c');rounded(x,y,w,h,7,'#fff0c7');rounded(x+2,y+2,w-4,h-4,5,'#30434a')}
@@ -47,43 +49,45 @@ function drawAnimal(x,y,scale=1,who=animal,pose=0){
  ctx.restore();
 }
 function resetWorld(){
- camera=0;stress=0;status={wet:0,torn:0};areaSeen=new Set();previousArea=-1;worldEnd=1850+Math.floor(rand(stage+8)*150);platforms=[];hazards=[];sights=[];
- platforms.push({x:0,y:226,w:worldEnd+600,h:80});
- let x=135,id=0;
- while(x<worldEnd-90){let gap=22+Math.floor(rand(id+1)*32),w=70+Math.floor(rand(id+7)*75),y=202-Math.floor(rand(id+2)*48);
- platforms.push({x:x+gap,y,w,h:15});
- if(id%3===0)hazards.push({x:x+gap+35+Math.floor(rand(id+11)*40),y:218,type:rand(id+12)>.52?'puddle':'thorn',w:rand(id+13)>.52?25:17});
- if(id%2===0)sights.push({x:x+gap+w*.55,y:y-24,type:id%4===0?'lookout':'sight',id:`${stage}-${id}`});
- x+=gap+w+20;id++;
+ camera=0;cameraY=0;status={wet:0,torn:0};areaSeen=new Set();previousArea=-1;worldEnd=900;platforms=[];hazards=[];sights=[];
+ platforms.push({x:0,y:226,w:worldEnd+600,h:80,kind:'ground'});
+ // A guaranteed, procedurally varied stairway climbs from the valley to the summit.
+ let x=150,y=205,id=0,last;
+ while(id<9){x+=76+Math.floor(rand(100+id)*17);y-=13+Math.floor(rand(130+id)*9);let w=57+Math.floor(rand(160+id)*15);last={x,y,w,h:12,kind:'trail'};platforms.push(last);
+  if(id>1&&rand(220+id)>.36){let sideX=x+14+Math.floor(rand(250+id)*Math.max(1,w-30));sights.push({x:sideX,y:y-20,type:rand(280+id)>.5?'berry':'flower',id:`${stage}-${id}`})}
+  // Occasional broad ledges and scenic stepping stones make each ascent feel different.
+  if(id%2===0){let bx=x-24-Math.floor(rand(320+id)*22),by=y+22+Math.floor(rand(350+id)*17);if(by<218)platforms.push({x:bx,y:by,w:35+Math.floor(rand(380+id)*24),h:9,kind:'ledge'})}
+  if(id%3===1)hazards.push({x:x+Math.floor(rand(410+id)*Math.max(1,w-18)),y:y-4,type:rand(440+id)>.5?'puddle':'thorn',w:13});
+  id++;
  }
- sights.push({x:worldEnd-70,y:178,type:'gate',id:'gate'});
- player={x:96,y:225,vx:0,vy:0,w:14,h:23,onGround:false,face:1};
+ worldEnd=x+last.w+155;sights.push({x:x+last.w*.5,y:y-30,type:'vista',id:'summit'});
+ player={x:96,y:225,vx:0,vy:0,w:14,h:23,onGround:false,face:1,coyote:0,jumpBuffer:0};
 }
 function toastMsg(s){toast=s;toastTime=150}
-function startRun(){animal=animals[animalIndex];stage=0;coins=0;shopItems={boots:false,umbrella:false,pack:false};resetWorld();mode='play';toastMsg(`${animal.name} sets off!`)}
-function enterTown(){mode='town';stress=0;status={wet:0,torn:0};coins+=12+stage*3;toastMsg('A new town, and a fresh heart.')}
+function startRun(){animal=animals[animalIndex];stage=0;coins=0;homesickness=0;wanderlust=100;runSeed=1+Math.floor(Math.random()*1000000);shopItems={boots:false,umbrella:false,pack:false};resetWorld();mode='play';toastMsg(`${animal.name} sets off!`)}
+function enterTown(){mode='town';homesickness=Math.max(0,homesickness-18);wanderlust=Math.min(100,wanderlust+12);status={wet:0,torn:0};coins+=12+stage*3;toastMsg('A warm welcome lifts your spirits.')}
 function buy(item,cost){if(shopItems[item]){toastMsg('Already in your pack!');return}if(coins<cost){toastMsg('Not enough acorn coins yet.');return}coins-=cost;shopItems[item]=true;toastMsg('A fine bit of kit!')}
 function startNext(){stage++;if(stage>=biomes.length){mode='ending';return}resetWorld();mode='play';toastMsg(`Into ${biomes[stage].name.toLowerCase()}!`)}
 function moveAxis(){return (keys.has('ArrowRight')||keys.has('d')||keys.has('touchright')?1:0)-(keys.has('ArrowLeft')||keys.has('a')||keys.has('touchleft')?1:0)}
-function doJump(){if(mode==='play'&&player.onGround){player.vy=-5.7*animal.jump;player.onGround=false;}}
-function explore(){if(mode!=='play')return;let nearby=sights.find(s=>s.type!=='gate'&&Math.abs(s.x-(player.x+7))<42&&Math.abs(s.y-(player.y-15))<52);if(nearby){takeSight(nearby);return}toastMsg('Look for a little sparkle nearby.')}
-function takeSight(s){sights=sights.filter(v=>v!==s);let amount=s.type==='lookout'?25:17;stress=Math.max(0,stress-amount);coins+=s.type==='lookout'?3:1;toastMsg(s.type==='lookout'?'A breathtaking view! Heart lighter.':'A lovely little discovery.');}
+function doJump(){if(mode==='play'){player.jumpBuffer=8;if(player.onGround||player.coyote>0){player.vy=-6.7*animal.jump;player.onGround=false;player.coyote=0;player.jumpBuffer=0}}}
+function explore(){if(mode!=='play')return;let nearby=sights.find(s=>s.type==='vista'&&Math.abs(s.x-(player.x+7))<48&&Math.abs(s.y-(player.y-15))<55);if(nearby){toastMsg('You take in the whole wide world.');enterTown();return}nearby=sights.find(s=>(s.type==='berry'||s.type==='flower')&&Math.abs(s.x-(player.x+7))<42&&Math.abs(s.y-(player.y-15))<52);if(nearby){takeSight(nearby);return}toastMsg('Climb toward the summit, and watch for little wonders.')}
+function takeSight(s){if(s.type==='vista')return;sights=sights.filter(v=>v!==s);let amount=s.type==='flower'?19:14;wonder(amount);coins+=1;toastMsg(s.type==='flower'?'A rare flower brightens the trail!': 'Sweet berries restore your wanderlust!')}
 function update(){tick++;if(mode!=='play')return;
- let axis=moveAxis(),speed=1.65*animal.speed*(status.wet>0?.78:1)*(status.torn>0?.85:1);
- if(axis){player.vx+=axis*.28;player.face=axis} else player.vx*=.78;
- player.vx=Math.max(-speed,Math.min(speed,player.vx));player.x+=player.vx;player.x=Math.max(0,Math.min(worldEnd+120,player.x));
- player.vy+=.27;player.vy=Math.min(6,player.vy);player.y+=player.vy;player.onGround=false;
- for(const p of platforms){if(player.x+11>p.x&&player.x+3<p.x+p.w&&player.y+1>=p.y&&player.y+1-player.vy<=p.y&&player.vy>=0){player.y=p.y-1;player.vy=0;player.onGround=true}}
- let target=Math.max(0,Math.min(worldEnd-290,player.x-155));camera+=(target-camera)*.13;
- // Returning to a discovered stretch makes a lonely heart ache.
- let area=Math.floor(player.x/240);if(area!==previousArea){if(areaSeen.has(area))stress=Math.min(100,stress+5*animal.sensitivity);else areaSeen.add(area);previousArea=area}
- // Small passive homesickness; only earned by moving onward.
- if(Math.abs(player.vx)>.45&&tick%65===0)stress=Math.min(100,stress+.8*animal.sensitivity*(stage===1&&shopItems.umbrella?0.55:1));
- for(const h of hazards){if(!h.hit&&player.x+11>h.x&&player.x+3<h.x+h.w&&player.y+1>h.y-20){h.hit=true;if(h.type==='puddle'&&!shopItems.boots){status.wet=450;stress=Math.min(100,stress+8*animal.sensitivity);toastMsg('Squelch! Wet socks slow you down.')}else if(h.type==='thorn'&&!shopItems.pack){status.torn=450;stress=Math.min(100,stress+9*animal.sensitivity);toastMsg('A thorn snagged your travel bag!')}else{coins++;toastMsg('Good gear saves the day!')}}}
- for(const s of [...sights])if(s.type!=='gate'&&Math.abs(player.x-s.x)<14&&Math.abs(player.y-s.y)<55)takeSight(s);
+ let axis=moveAxis(),speed=2.25*animal.speed*(status.wet>0?.82:1)*(status.torn>0?.88:1),oldY=player.y;
+ if(axis){player.vx+=axis*.42;player.face=axis}else player.vx*=.78;
+ player.vx=Math.max(-speed,Math.min(speed,player.vx));player.x+=player.vx;player.x=Math.max(0,Math.min(worldEnd+100,player.x));
+ if(player.jumpBuffer>0)player.jumpBuffer--;if(player.coyote>0)player.coyote--;
+ let rising=player.vy<0&&(keys.has('Space')||keys.has('ArrowUp')||keys.has('w'));
+ player.vy+=rising?.22:.31;player.vy=Math.min(7.5,player.vy);player.y+=player.vy;player.onGround=false;
+ for(const p of platforms){if(player.x+11>p.x&&player.x+3<p.x+p.w&&player.y+1>=p.y&&oldY+1<=p.y&&player.vy>=0){player.y=p.y-1;player.vy=0;player.onGround=true}}
+ if(player.onGround){player.coyote=7;if(player.jumpBuffer>0){player.vy=-6.7*animal.jump;player.onGround=false;player.coyote=0;player.jumpBuffer=0}}
+ let target=Math.max(0,Math.min(worldEnd-290,player.x-155));camera+=(target-camera)*.16;let verticalTarget=Math.max(0,Math.min(170,150-player.y));cameraY+=(verticalTarget-cameraY)*.12;
+ // Revisiting a familiar stretch and long, difficult travel can weigh on the heart.
+ let area=Math.floor(player.x/240);if(area!==previousArea){if(areaSeen.has(area))hardship(5);else areaSeen.add(area);previousArea=area}
+ if(Math.abs(player.vx)>.55&&tick%90===0)hardship(.8*(stage===1&&shopItems.umbrella?.55:1));
+ for(const h of hazards){if(!h.hit&&player.x+11>h.x&&player.x+3<h.x+h.w&&player.y+1>h.y-20&&player.y-22<h.y+8){h.hit=true;if(h.type==='puddle'&&!shopItems.boots){status.wet=300;hardship(8);toastMsg('Squelch! Wet socks slow you down.')}else if(h.type==='thorn'&&!shopItems.pack){status.torn=300;hardship(9);toastMsg('A thorn snagged your travel bag!')}else{coins++;toastMsg('Good gear saves the day!')}}}
  if(status.wet>0)status.wet--;if(status.torn>0)status.torn--;
- let gate=sights.find(s=>s.type==='gate');if(gate&&player.x>gate.x-13){enterTown()}
- if(stress>=100){mode='lost'}
+ if(wanderlust<=0||homesickness>=100){mode='lost'}
  if(toastTime>0)toastTime--;
 }
 function drawBackground(b){
@@ -101,32 +105,30 @@ function drawWorld(){
  let b=biomes[stage];drawBackground(b);
  // drifting ground tiles
  for(const p of platforms){let x=Math.floor(p.x-camera);if(x+p.w<0||x>W)continue;
- ctx.fillStyle=b.ground;ctx.fillRect(x,p.y,p.w,p.h);
- ctx.fillStyle=b.ground2;ctx.fillRect(x,p.y,p.w,4);
- for(let tx=x+3;tx<x+p.w;tx+=12){ctx.fillStyle=tx%3?'#ffffff13':'#162e2c22';ctx.fillRect(tx,p.y+7,5,3)}
- if(p.y===226){for(let tx=x+5;tx<x+p.w;tx+=19){ctx.fillStyle=b.accent;ctx.fillRect(tx,p.y-2,2,2);ctx.fillRect(tx+3,p.y+10,3,2)}}
+ let py=Math.floor(p.y+cameraY);ctx.fillStyle=p.kind==='ground'?b.ground:b.ground2;ctx.fillRect(x,py,p.w,p.h);
+ ctx.fillStyle=b.accent;ctx.fillRect(x,py,p.w,2);ctx.fillStyle=b.ground;ctx.fillRect(x,py+2,p.w,2);
+ for(let tx=x+3;tx<x+p.w;tx+=12){ctx.fillStyle=tx%3?'#ffffff13':'#162e2c22';ctx.fillRect(tx,py+5,5,3)}
+ if(p.kind==='ground'){for(let tx=x+5;tx<x+p.w;tx+=19){ctx.fillStyle=b.accent;ctx.fillRect(tx,py-2,2,2);ctx.fillRect(tx+3,py+10,3,2)}}
  }
- for(const h of hazards){let x=Math.floor(h.x-camera);if(x<-30||x>W+30)continue;
- if(h.type==='puddle'){ctx.fillStyle='#365d68';ctx.fillRect(x,216,h.w,8);ctx.fillStyle='#9dd9d0';ctx.fillRect(x+4,216,h.w-8,2);ctx.fillStyle='#d8f6df';ctx.fillRect(x+8,213,3,2)}else{ctx.fillStyle='#704638';ctx.fillRect(x,215,h.w,9);ctx.fillStyle='#e99b73';for(let i=0;i<3;i++){ctx.fillRect(x+2+i*6,211-i%2*3,3,5)}}
+ for(const h of hazards){let x=Math.floor(h.x-camera),hy=Math.floor(h.y+cameraY);if(x<-30||x>W+30)continue;
+ if(h.type==='puddle'){ctx.fillStyle='#365d68';ctx.fillRect(x,hy,h.w,6);ctx.fillStyle='#9dd9d0';ctx.fillRect(x+2,hy,h.w-4,2)}else{ctx.fillStyle='#704638';ctx.fillRect(x,hy+2,h.w,5);ctx.fillStyle='#e99b73';for(let i=0;i<3;i++){ctx.fillRect(x+2+i*4,hy-i%2*3,3,5)}}
  }
- for(const s of sights){let x=Math.floor(s.x-camera);if(x<-20||x>W+20)continue;
- if(s.type==='gate'){ctx.fillStyle='#ffe28a';ctx.fillRect(x-9,174,18,52);ctx.fillStyle='#fff3c9';ctx.fillRect(x-5,180,10,46);ctx.fillStyle='#a8774e';ctx.fillRect(x+2,201,2,3);ctx.fillStyle='#fff4be';ctx.fillRect(x-12,166,24,2);continue}
- // sparkle/view marker
- ctx.fillStyle=s.type==='lookout'?'#ffed9a':'#d7f0b0';ctx.fillRect(x-1,s.y-5,3,12);ctx.fillRect(x-5,s.y-1,11,3);ctx.fillRect(x-3,s.y-4,2,2);ctx.fillRect(x+2,s.y+3,2,2);
- ctx.fillStyle='#fff5c7';ctx.fillRect(x-1,s.y-3,2,3);
+ for(const s of sights){let x=Math.floor(s.x-camera),sy=Math.floor(s.y+cameraY);if(x<-20||x>W+20)continue;
+ if(s.type==='vista'){ctx.fillStyle='#f7d98a';ctx.fillRect(x-2,sy-2,4,4);ctx.fillRect(x-12,sy+4,24,2);ctx.fillStyle='#fff1bc';ctx.fillRect(x-18,sy-9,36,2);ctx.fillRect(x-13,sy-14,26,2);continue}
+ if(s.type==='berry'){ctx.fillStyle='#527b49';ctx.fillRect(x-7,sy-2,14,9);ctx.fillStyle='#d75e69';ctx.fillRect(x-5,sy,3,3);ctx.fillRect(x+2,sy+2,3,3);ctx.fillStyle='#c8df8b';ctx.fillRect(x-2,sy-5,4,4)}else{ctx.fillStyle='#4b8053';ctx.fillRect(x-1,sy,2,9);ctx.fillStyle='#f6d7ef';ctx.fillRect(x-4,sy-5,3,3);ctx.fillRect(x+1,sy-7,3,3);ctx.fillStyle='#f1d36d';ctx.fillRect(x-1,sy-3,2,2)}
  }
  // exit trail sign
- let sign=Math.floor(worldEnd-30-camera);if(sign>-20&&sign<W){ctx.fillStyle='#876349';ctx.fillRect(sign,194,3,31);ctx.fillStyle='#f0d39a';ctx.fillRect(sign-8,194,20,10);text('TOWN',sign+2,199,5,'#624d3d','center')}
- let px=player.x-camera;drawAnimal(px+7,player.y+1,1,animal,Math.abs(player.vx)>.2?1:0);
+
+ let px=player.x-camera;drawAnimal(px+7,player.y+cameraY+1,1,animal,Math.abs(player.vx)>.2?1:0);
 }
 function meter(x,y,w,value,color,label){rounded(x,y,w,8,4,'#1e3036');rounded(x+1,y+1,Math.max(0,(w-2)*value/100),6,3,color);text(label,x,y-5,7,'#fff0c7')}
 function hud(){
  // compact top overlay
- rounded(7,7,189,44,6,'#233a42e8');drawAnimal(23,39,.63,animal,0);text(animal.name.toUpperCase(),38,16,8,palette.cream);text(biomes[stage].name,38,26,7,'#c7d6b7','left','600');meter(38,41,107,stress,stress>70?'#ee8170':'#edc16c','HOMESICK');
+ rounded(7,7,189,44,6,'#233a42e8');drawAnimal(23,39,.63,animal,0);text(animal.name.toUpperCase(),38,16,8,palette.cream);text(biomes[stage].name,38,26,7,'#c7d6b7','left','600');meter(38,41,107,wanderlust,wanderlust<30?'#ee8170':'#86d49a','WANDERLUST');
  rounded(407,8,65,21,6,'#233a42e8');text('✦ '+coins,439,19,10,palette.gold,'center');
  if(status.wet>0||status.torn>0){rounded(366,34,106,14,5,'#233a42e8');text(`${status.wet?'💧 WET SOCKS':''}${status.wet&&status.torn?' · ':''}${status.torn?'⌁ TORN BAG':''}`,419,41,7,'#ffe7b0','center')}
- let near=sights.find(s=>s.type!=='gate'&&Math.abs(s.x-player.x)<44);
- if(near){rounded(178,13,136,18,5,'#253b43dd');text('E / ✦  take in the view',246,22,8,'#fff1c8','center')}
+ let near=sights.find(s=>Math.abs(s.x-player.x)<44);
+ if(near){rounded(178,13,136,18,5,'#253b43dd');text(near.type==='vista'?'E / ✦  take in the view':'E / ✦  little wonder',246,22,8,'#fff1c8','center')}
 }
 function drawTouch(){
  // Touch-first thumb pads, always visible and clear of core play area.
@@ -138,7 +140,7 @@ function drawTitle(){
  // foreground meadow
  ctx.fillStyle='#416d52';ctx.fillRect(0,204,W,66);for(let i=0;i<45;i++){let x=(i*23+tick*.15)%W;ctx.fillStyle=i%2?'#9cc878':'#d8dc91';ctx.fillRect(x,208+(i%3)*3,2,5)}
  // title sign
- rounded(70,23,340,50,10,'#243b43');rounded(73,26,334,44,8,'#4e7460');text('LITTLE ELSEWHERE',240,43,23,'#fff0c7','center');text('A TINY WANDERING ADVENTURE',240,61,8,'#d7e1ae','center','600');
+ rounded(70,23,340,50,10,'#243b43');rounded(73,26,334,44,8,'#4e7460');text('WANDERLUST',240,43,25,'#fff0c7','center');text('A CLIMBING ADVENTURE',240,61,8,'#d7e1ae','center','600');
  text('Choose your little traveler',240,91,10,'#fff0c7','center');
  animals.forEach((a,i)=>{let x=54+i*126;let selected=i===animalIndex;rounded(x,107,112,83,7,selected?'#ffd36c':'#f1e4be');rounded(x+2,109,108,79,5,selected?'#536f5d':'#364b50');drawAnimal(x+56,143,.9,a,0);text(a.name,x+56,168,10,'#fff0c7','center');text(a.trait,x+56,181,6,'#d5ddb9','center','600');if(selected){ctx.fillStyle='#ffd36c';ctx.fillRect(x+50,104,12,3)}});
  text(`${animals[animalIndex].plus}  ·  ${animals[animalIndex].minus}`,240,198,8,'#fff0c7','center','600');button(174,217,132,31,'SET OFF','4 lands · 4 little towns',true);
@@ -151,7 +153,7 @@ function drawTown(){
  text('WELCOME TO',240,39,9,'#516254','center','600');text('THIMBLEWICK',240,57,20,'#3d5148','center');text('Take a breath. Stay a while.',240,75,9,'#5b6352','center','600');
  drawAnimal(222,202,1,animal,1);
  panel(267,89,195,131);text('THE WANDERER’S STALL',364,104,9,'#f8e6b9','center');text(`ACORNS  ✦ ${coins}`,364,118,8,palette.gold,'center');
- const items=[['boots','Mossy boots','Puddles won’t slow you','8'],['umbrella','Pocket umbrella','Eases homesickness in the marsh','10'],['pack','Thorn-proof pack','No more snagged straps','12']];
+ const items=[['boots','Mossy boots','Puddles won’t slow you','8'],['umbrella','Pocket umbrella','Keeps the marsh chill at bay','10'],['pack','Thorn-proof pack','No more snagged straps','12']];
  items.forEach((it,i)=>{let y=128+i*27,owned=shopItems[it[0]];rounded(276,y,176,23,4,'#40564e');text(it[1],283,y+7,8,owned?'#b8d3a9':'#fff0c7');text(owned?'PACKED':`${it[3]} ✦`,443,y+7,7,owned?'#a6d99a':palette.gold,'right');text(it[2],283,y+17,6,'#c8d0b1','left','600');if(!owned){ctx.fillStyle='#9ca778';ctx.fillRect(430,y+2,20,19)}});
  button(173,226,134,30,'WANDER ON','Next land awaits',true);
 }
@@ -192,6 +194,7 @@ window.addEventListener('keydown',e=>{let k=e.key;if(['ArrowLeft','ArrowRight','
 window.addEventListener('keyup',e=>{keys.delete(e.key);if(e.key===' ')keys.delete('Space')});
 // Mobile buttons use virtual movement keys while held; prevent page scrolling/zoom gestures.
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
+// Test-only state access removed.
 requestAnimationFrame(frame);
 })();
 </script></body></html>
